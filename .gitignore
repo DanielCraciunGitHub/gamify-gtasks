@@ -1,1 +1,28 @@
-node_modules
+node_modules/
+
+# AWS SAM build artifacts
+.aws-sam/
+
+# Test output
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS/editor files
+.DS_Store
+*.swp
+
+# Credentials
+credentials.json
+token.json

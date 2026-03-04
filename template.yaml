@@ -2,34 +2,39 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   sam-gamify-gtasks
 Transform:
-- AWS::Serverless-2016-10-31
+  - AWS::Serverless-2016-10-31
 
 # Resources declares the AWS resources that you want to include in the stack
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
-  # This is the Lambda function definition associated with the source code: sqs-payload-logger.js. For all available properties, see
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-  ScheduledEventLogger:
+  ScheduledGoogleTasksProcessor:
     Type: AWS::Serverless::Function
     Properties:
-      Description: A Lambda function that logs the payload of messages sent to 
-        an associated SQS queue.
+      Description: A Lambda function that processes Google Tasks and sends a report via SES to the user's email at 10pm UTC.
       Runtime: nodejs22.x
       Architectures:
-      - x86_64
-      Handler: src/handlers/scheduled-event-logger.scheduledEventLoggerHandler
-      # This property associates this Lambda function with a scheduled CloudWatch Event. For all available properties, see
-      # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#schedule
-      # This example runs every hour.
+        - x86_64
+      Handler: src/handlers/scheduled-google-tasks-processor.scheduledGoogleTasksProcessorHandler
+
+      Environment:
+        Variables:
+          GOOGLE_CLIENT_ID: "{{resolve:secretsmanager:gamify-gtasks:SecretString:GOOGLE_CLIENT_ID}}"
+          GOOGLE_CLIENT_SECRET: "{{resolve:secretsmanager:gamify-gtasks:SecretString:GOOGLE_CLIENT_SECRET}}"
+          SES_FROM_EMAIL: "{{resolve:secretsmanager:gamify-gtasks:SecretString:SES_FROM_EMAIL}}"
+          SES_TO_EMAIL: "{{resolve:secretsmanager:gamify-gtasks:SecretString:SES_TO_EMAIL}}"
+
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"
+
       Events:
-        CloudWatchEvent:
+        DailyTrigger:
           Type: Schedule
           Properties:
-            Schedule: cron(0 * * * ? *)
+            Schedule: cron(0 22 * * ? *)
       MemorySize: 128
       Timeout: 100
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-Globals:
-  Function:
-    LoggingConfig:
-      LogFormat: JSON
